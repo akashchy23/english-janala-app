@@ -1,3 +1,19 @@
+const createElements = (arr) =>{
+    const htmlElements = arr.map((el) => `<span class="btn">${el}</span>`)
+    return (htmlElements.join(" "));
+}
+
+const manageSpinner =(status) =>{
+    if(status == true){
+        document.getElementById("spinner").classList.remove("hidden")
+        document.getElementById("word-container").classList.add("hidden")
+    }
+    else{
+         document.getElementById("word-container").classList.remove("hidden")
+        document.getElementById("spinner").classList.add("hidden")
+    }
+}
+
 const loadLesson = () =>{
     const url =("https://openapi.programming-hero.com/api/levels/all");
     fetch(url) //promise of response
@@ -5,14 +21,58 @@ const loadLesson = () =>{
     .then((json) => displayLesson(json.data))
 }
 
+const removeActive = () =>{
+    const lessonButtons = document.querySelectorAll(".lesson-btn")
+    // console.log(lessonButtons)
+    lessonButtons.forEach(btn => btn.classList.remove("active"))
+}
+
 const toLoadWord = (id) => {
-    
+    manageSpinner(true);
     const url = (`https://openapi.programming-hero.com/api/level/ ${id}`);
     fetch(url)
     .then((res) => res.json())
-    .then((data) => displayLevelWord(data.data)) 
+    .then((data) => {
+        removeActive() //remove all active class
+        const clickBtn = document.getElementById(`lesson-btn-${id}`)
+        // console.log(clickBtn)
+
+        clickBtn.classList.add("active") // add active class
+        displayLevelWord(data.data)
+    }) 
 }
 
+const loadWordDetail = async(id) =>{
+    const url = `https://openapi.programming-hero.com/api/word/ ${id}`
+    console.log(url);
+    const res = await fetch(url) ;
+    const details = await res.json();
+    displayWordDetails(details.data)
+}
+
+const displayWordDetails = (word) => {
+    // console.log(word)
+    const detailsBox = document.getElementById("details-container");
+    detailsBox.innerHTML = `
+         <div>
+            <h2 class="text-2xl font-bold">${word.word} (<i class="fa-solid fa-microphone-lines"></i>:${word.pronunciation})</h2>
+        </div>
+        <div>
+            <h2 class="font-bold">Meaning</h2>
+            <p>${word.meaning}</p>
+        </div>
+        <div>
+            <h2 class="font-bold">Example</h2>
+            <p>${word.sentence}</p>
+        </div>
+        <div>
+            <h2 class="font-bold">Synonyms</h2>
+            <div class=""> ${createElements(word.synonyms)}</div>
+        </div>
+    `;
+    document.getElementById("word_modal").showModal()
+
+}
 const displayLevelWord =(words) =>{
     // console.log(words)
     const wordContainer = document.getElementById("word-container");
@@ -26,6 +86,7 @@ const displayLevelWord =(words) =>{
             <h2 class="font-bangla font-bold text-3xl">নেক্সট Lesson এ যান</h2>
           </div>
          `;
+         manageSpinner(false);
          return;
 
     }
@@ -48,7 +109,7 @@ const displayLevelWord =(words) =>{
             <p class="font-semibold">Meaning /Pronounciation</p>
             <h1 class="font-bangla font-semibold text-2xl">" ${word.meaning? word.meaning : "অর্থ পাওয়া যায় নি"}/ ${word.pronunciation? word.pronunciation :"pronunciation পাওয়া যায় নাই"} "</h1>
             <div class="flex justify-between items-center">
-                     <button class="btn bg-[#1A91FF10] hover:bg-[#1A91FF70]"><i class="fa-solid fa-circle-info"></i></button>
+                     <button onclick="loadWordDetail(${word.id})" class="btn bg-[#1A91FF10] hover:bg-[#1A91FF70]"><i class="fa-solid fa-circle-info"></i></button>
                      <button class="btn bg-[#1A91FF10] hover:bg-[#1A91FF70]"><i class="fa-solid fa-volume-high"></i></button>
             </div>
 
@@ -56,6 +117,7 @@ const displayLevelWord =(words) =>{
         `;
         wordContainer.append(card)
     }
+    manageSpinner(false);
 };
 
 const displayLesson = (lessons) => {
@@ -70,7 +132,7 @@ const displayLesson = (lessons) => {
         // 3. Create Element
         const btnDiv = document.createElement("div");
         btnDiv.innerHTML = `
-             <button  onclick="toLoadWord(${lesson.level_no})"  class="btn btn-outline btn-primary">
+             <button id="lesson-btn-${lesson.level_no}" onclick="toLoadWord(${lesson.level_no})"  class="btn btn-outline btn-primary lesson-btn">
              <i class="fa-solid fa-book-open"></i>Lesson ${lesson.level_no}
              </button>
         `;
